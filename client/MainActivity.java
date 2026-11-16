@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setMediaPlaybackRequiresUserGesture(true);s.setSafeBrowsingEnabled(true);
   CookieManager.getInstance().setAcceptCookie(true);CookieManager.getInstance().setAcceptThirdPartyCookies(web,false);
   web.setWebViewClient(new WebViewClient(){
-   @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){String url=request.getUrl().toString();if(trusted(url))return false;if(request.isForMainFrame())outside(url);return true;}
+   @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){String url=request.getUrl().toString();if(trusted(url)&&!"/desktop-login.html".equals(request.getUrl().getPath()))return false;if(request.isForMainFrame())outside(url);return true;}
    @Override public void onPageFinished(WebView view,String url){if(trusted(url)){view.evaluateJavascript(enhancement,null);CookieManager.getInstance().flush();}}
    @Override public void onReceivedError(WebView view,WebResourceRequest request,WebResourceError error){if(request.isForMainFrame())Toast.makeText(MainActivity.this,"Ошибка сети. Нажмите ↻ для повтора.",Toast.LENGTH_LONG).show();}
   });
