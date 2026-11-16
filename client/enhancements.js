@@ -11,7 +11,7 @@
   const apply = () => {
     const accent = /^#[0-9a-f]{6}$/i.test(prefs.accent) ? prefs.accent : defaults.accent;
     const size = Math.max(12,Math.min(22,Number(prefs.size)||16));
-    style.textContent = `:root{--accent:${accent}!important}.msg-text{font-size:${size}px!important}
+    style.textContent = `:root{--accent:${accent}!important}.bubble{font-size:${size}px!important}
       ${prefs.compact?'.chat-item{padding-top:7px!important;padding-bottom:7px!important}.msg-row.first{margin-top:4px!important}':''}
       ${prefs.motion?'*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important;scroll-behavior:auto!important}':''}
       ${prefs.privacy?'.chat-item-preview{filter:blur(5px)}.chat-item:hover .chat-item-preview,.chat-item:focus-within .chat-item-preview{filter:none}':''}
@@ -33,6 +33,23 @@
     panel.querySelector('#lt-close').onclick=()=>panel.close();
     button.onclick=()=>{if(!panel.open)panel.showModal();};
     document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&e.code==='KeyL'){e.preventDefault();button.click();}});
+    const login=document.createElement('button');login.type='button';login.textContent='Войти через Google';
+    const status=document.createElement('p');status.setAttribute('role','status');
+    panel.append(login,status);
+    const post=async(path,data={})=>{const res=await fetch('/api/auth/desktop/'+path,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!res.ok)throw new Error('Вход недоступен ('+res.status+')');return res.json();};
+    let polling=false;
+    login.onclick=async()=>{
+      if(polling)return;login.disabled=true;status.textContent='Готовим вход…';
+      try{
+        const request=await post('start');
+        const link=document.createElement('a');link.href='/desktop-login.html#'+new URLSearchParams({id:request.id,approve:request.approve});link.target='_blank';link.rel='noopener';link.textContent='Открыть браузер и подтвердить вход';link.style.cssText='display:block;color:#c7bdff;padding:12px 0';
+        status.replaceChildren(link,document.createTextNode('После подтверждения вернитесь в LimoTools. Ожидание — до 5 минут.'));
+        polling=true;const deadline=Date.now()+300000;
+        while(Date.now()<deadline){await new Promise(r=>setTimeout(r,3000));const result=await post('poll',{id:request.id,poll:request.poll});if(result.user){location.reload();return;}}
+        status.textContent='Время ожидания истекло. Повторите вход.';
+      }catch(e){status.textContent=e.message+' — попробуйте вход по логину и паролю.';}
+      finally{polling=false;login.disabled=false;}
+    };
     document.body.append(button,panel);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
